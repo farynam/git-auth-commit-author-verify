@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#Verify user commiting user is authenticated and is pushing with his own username
+HTPASSW_FILE="/etc/apache2/.git-htpasswd"
+
+
+new_rev=$3
+old_rev=$2
+
+echo "REMOTE_USER:${REMOTE_USER}"
+
+function verify_user {
+	commit_user=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+	remote_user=$(echo "$2" | tr '[:upper:]' '[:lower:]')
+	if [ "${commit_user}" != "${remote_user}" ]; then
+		echo "user not authenticated"
+		exit 1
+	fi
+}
+
+revions=$(git rev-list ${new_rev}...${old_rev})
+
+
+for rev in $revions 
+do
+	commit_user=$(git cat-file commit ${rev} | grep author | cut -f 2 -d ' ' | tr '[:upper:]' '[:lower:]')
+	if [ ! -z "${commit_user}" ] ; then
+		verify_user ${commit_user} ${REMOTE_USER}
+	fi
+done
+
+
+exit 0
